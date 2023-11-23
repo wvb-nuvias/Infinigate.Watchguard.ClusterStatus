@@ -5,6 +5,14 @@
     <TargetFramework>net7.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <NoWarn>NU1701</NoWarn>
   </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="mysql.data" Version="8.2.0" />
+    <PackageReference Include="SharpConfig" Version="3.2.9.1" />
+    <PackageReference Include="snmpsharpnet" Version="0.9.6" />
+    <PackageReference Include="Teamshook.Net" Version="0.1.0.18" />
+  </ItemGroup>
 
 </Project>

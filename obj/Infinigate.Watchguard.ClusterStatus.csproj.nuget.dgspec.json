@@ -36,6 +36,9 @@
           }
         },
         "warningProperties": {
+          "noWarn": [
+            "NU1701"
+          ],
           "warnAsError": [
             "NU1605"
           ]
@@ -44,6 +47,24 @@
       "frameworks": {
         "net7.0": {
           "targetAlias": "net7.0",
+          "dependencies": {
+            "SharpConfig": {
+              "target": "Package",
+              "version": "[3.2.9.1, )"
+            },
+            "Teamshook.Net": {
+              "target": "Package",
+              "version": "[0.1.0.18, )"
+            },
+            "mysql.data": {
+              "target": "Package",
+              "version": "[8.2.0, )"
+            },
+            "snmpsharpnet": {
+              "target": "Package",
+              "version": "[0.9.6, )"
+            }
+          },
           "imports": [
             "net461",
             "net462",
