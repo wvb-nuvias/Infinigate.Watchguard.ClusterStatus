@@ -1,0 +1,28 @@
+# Infinigate.Afas.Sync config file
+# Wouter Vanbelleghem<wouter.vanbelleghem@infinigate.com>
+
+# Sync Mode Options = all, subscriptions, organisations, contacts or serials, teams
+[General]
+sync_mode = all
+temp_path = /tmp/watchguard
+cache_path = /var/cache/watchguard
+
+[MySql]
+mysql_pass = (mysql password)
+mysql_host = (mysql server)
+mysql_base = (mysql database)
+mysql_user = (mysql user)
+
+# Afas Adm Options = all, or id (1,2,3,...)
+[Afas]
+afas_environment = (afas environment f.i. 10000AB)
+afas_token = (afas token in app connector)
+afas_adm = all
+
+[Watchguard]
+soap_url = (watchguard url to fetch feature key)
+
+[Teams]
+webhook_url_sync = (teams incoming webhook channel url)
+webhook_url_renewals = (teams incoming webhook channel url)
+...
