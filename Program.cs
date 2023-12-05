@@ -20,42 +20,91 @@ using System.Runtime.InteropServices;
 using SharpConfig;
 using Infinigate.Watchguard.Classes;
 
-MySqlConnection conn;
+MySqlConnection conn = null;
 MySqlCommand cmd;
 long elapsedMs=0;
+bool sendTeams=false;
 
 string homepath = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
 string configfile = homepath + "/.Infinigate.Watchguard.ClusterStatus";
 
-Console.Writeline("Using " + configfile + "...");
-
-var config = Configuration.LoadFromFile(configfile);
-var section = config["MySql"];
-
-string mysql_pass = section["mysql_pass"].StringValue;
-string mysql_host = section["mysql_host"].StringValue;
-string mysql_base = section["mysql_base"].StringValue;
-string mysql_user = section["mysql_user"].StringValue;
-
-section = config["Teams"];
-string teams_webhook_url = section["webhook_url_clusterstatus"].StringValue;
+string teams_webhook_url = "";
+string mysql_pass = "";
+string mysql_host = "";
+string mysql_base = "";
+string mysql_user = "";
+string connstring = "";
+string sql = "";
+int rowcount = 0;
 
 var watch = System.Diagnostics.Stopwatch.StartNew();
 
-//TODO Check database for all the clusters
-//TODO go over one by one
+try {
+    Console.WriteLine("Using " + configfile + "...");
+    var config = Configuration.LoadFromFile(configfile);
+    var section = config["MySql"];
 
-ClusterStatusResult cluster = Functions.GetClusterStatus("172.20.81.254");
+    mysql_pass = section["mysql_pass"].StringValue;
+    mysql_host = section["mysql_host"].StringValue;
+    mysql_base = section["mysql_base"].StringValue;
+    mysql_user = section["mysql_user"].StringValue;
 
-foreach(MemberStatusResult member in cluster.Result) {
-    Console.WriteLine(member);
+    connstring = "Server=" + mysql_host + ";Database=" + mysql_base + ";Uid=" + mysql_user + ";Pwd=" + mysql_pass + ";SslMode=none;convert zero datetime=True";
+
+    section = config["Teams"];
+    teams_webhook_url = section["webhook_url_clusterstatus"].StringValue;
+
+    if (teams_webhook_url!="") {
+        sendTeams=true;
+    }
+       
+    conn = new MySqlConnection(connstring);
+    conn.Open();
+
+    sql = "SELECT DISTINCT hostname,sysName,device_id FROM librenms.devices WHERE serial LIKE '%,%' AND disable_notify=0 AND disabled=0 AND `ignore`=0 AND status=1";
+
+    cmd=new MySqlCommand(sql,conn);
+    MySqlDataReader reader=cmd.ExecuteReader();
+
+    if (reader.HasRows) {
+        while (reader.Read()) {
+            rowcount++;
+        }
+        reader.Close();
+        Console.WriteLine(rowcount + " clusters found.");
+
+        reader=cmd.ExecuteReader();
+        while (reader.Read()) {
+            Console.WriteLine("IP:" + reader.GetString(0) + " - " + reader.GetString(1) );
+            ClusterStatusResult cluster = Functions.GetClusterStatus(reader.GetString(0));
+
+            //TODO save in cluster_status database and events?
+        }
+    }
+
+    Console.WriteLine("Done Cluster Checks.");
+} catch (Exception ex) {
+    Console.WriteLine(ex.Message);
 }
 
 watch.Stop();
 elapsedMs = watch.ElapsedMilliseconds;
 TimeSpan t = TimeSpan.FromMilliseconds(elapsedMs);
 
-Console.WriteLine("Done Cluster Checks.");
 Console.WriteLine("In Total, it took " + t.ToString(@"hh\:mm\:ss\:fff"));
 
 //TODO write information to database
+
+if (conn!=null) {
+    if (conn.State.ToString()=="Open") {
+        conn.Close();
+    }
+}
+
+if (sendTeams) {
+    var tclient = new TeamsHookClient();
+    var card = new MessageCard();
+    card.Title="Check of Clusters";
+    card.Text="Cluster Check Done.\n It took " + t.ToString(@"hh\:mm\:ss\:fff");
+    await tclient.PostAsync(teams_webhook_url, card);
+}
