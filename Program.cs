@@ -26,6 +26,9 @@ long elapsedMs=0;
 
 string homepath = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
 string configfile = homepath + "/.Infinigate.Watchguard.ClusterStatus";
+
+Console.Writeline("Using " + configfile + "...");
+
 var config = Configuration.LoadFromFile(configfile);
 var section = config["MySql"];
 
