@@ -39,7 +39,7 @@ int rowcount = 0;
 
 var watch = System.Diagnostics.Stopwatch.StartNew();
 
-try {
+//try {
     Console.WriteLine("Using " + configfile + "...");
     var config = Configuration.LoadFromFile(configfile);
     var section = config["MySql"];
@@ -61,7 +61,8 @@ try {
     conn = new MySqlConnection(connstring);
     conn.Open();
 
-    sql = "SELECT DISTINCT hostname,sysName,device_id FROM librenms.devices WHERE serial LIKE '%,%' AND disable_notify=0 AND disabled=0 AND `ignore`=0 AND status=1";
+    //TODO get snmp connect variables too
+    sql = "SELECT DISTINCT hostname, sysName, device_id, snmp_disable ,snmpver , authname ,authalgo ,authpass ,cryptoalgo ,cryptopass,community FROM librenms.devices WHERE serial LIKE '%,%' AND snmp_disable=0 AND disable_notify=0 AND disabled=0 AND `ignore`=0 AND status=1";
 
     cmd=new MySqlCommand(sql,conn);
     MySqlDataReader reader=cmd.ExecuteReader();
@@ -75,17 +76,23 @@ try {
 
         reader=cmd.ExecuteReader();
         while (reader.Read()) {
-            Console.WriteLine("IP:" + reader.GetString(0) + " - " + reader.GetString(1) );
-            ClusterStatusResult cluster = Functions.GetClusterStatus(reader.GetString(0));
+            Console.WriteLine("IP:" + reader.GetString(0) + " - " + reader.GetString(1) + " (" + reader.GetString(2) + ")" );
+            Console.WriteLine("---------------------------------------------------------");
+            
+            //ClusterStatusResult cluster = Functions.GetClusterStatus(reader.GetString(0));
+            ClusterStatusResult cluster = Functions.GetClusterStatus(reader.GetString(0), reader.GetString(4), reader.GetString(5), reader.GetString(10), reader.GetString(6), reader.GetString(7), reader.GetString(8), reader.GetString(9));
+            
+            Console.WriteLine(cluster.ToJSON());
+            Console.WriteLine("---------------------------------------------------------\n");
 
             //TODO save in cluster_status database and events?
         }
     }
 
     Console.WriteLine("Done Cluster Checks.");
-} catch (Exception ex) {
-    Console.WriteLine(ex.Message);
-}
+//} catch (Exception ex) {
+    //Console.WriteLine(ex.Message);
+//}
 
 watch.Stop();
 elapsedMs = watch.ElapsedMilliseconds;

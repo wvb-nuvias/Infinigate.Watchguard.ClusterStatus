@@ -48,6 +48,10 @@
         "net7.0": {
           "targetAlias": "net7.0",
           "dependencies": {
+            "NewtonSoft.JSON": {
+              "target": "Package",
+              "version": "[13.0.3, )"
+            },
             "SharpConfig": {
               "target": "Package",
               "version": "[3.2.9.1, )"

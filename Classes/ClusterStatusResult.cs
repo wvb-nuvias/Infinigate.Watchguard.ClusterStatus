@@ -1,6 +1,8 @@
 using System;
 using System.Net;
 using SnmpSharpNet;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace Infinigate.Watchguard.Classes
 {
@@ -93,7 +95,9 @@ namespace Infinigate.Watchguard.Classes
             }
         }
 
-        
+        public string ToJSON() {
+            return Newtonsoft.Json.JsonConvert.SerializeObject(this);
+        }
     }
 
     public class MemberStatusResult
@@ -125,6 +129,10 @@ namespace Infinigate.Watchguard.Classes
             tmp += "WAI: " + _WeightedAvgIndex + "\n";            
 
             return tmp;
+        }
+
+        public string ToJSON() {
+            return Newtonsoft.Json.JsonConvert.SerializeObject(this);
         }
     }
 }
