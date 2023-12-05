@@ -5,10 +5,6 @@ using SnmpSharpNet;
 namespace Infinigate.Watchguard.Classes
 {
     public class Functions {
-
-        //TODO replace library by "dotnet add package Lextm.SharpSnmpLib --version 12.5.2"
-        //TODO maybe it works better https://docs.sharpsnmp.com/getting-started/installing-on-windows.html
-
         public static ClusterStatusResult GetClusterStatus(string IP) {
             ClusterStatusResult tmp = new();
             IpAddress ipa = new IpAddress (IP);
@@ -56,11 +52,7 @@ namespace Infinigate.Watchguard.Classes
             IpAddress ipa = new IpAddress (IP);
             UdpTarget target = new UdpTarget((IPAddress)ipa);
             
-            // Construct a Protocol Data Unit (PDU)
             Pdu pdu = new Pdu();
-            // Set the request type (default is Get)
-            //pdu.Type = PduType.GetBulk;
-            // Add variables you wish to query
             
             SnmpV1Packet? resultv1 = null;
             SnmpV3Packet? resultv3 = null;
