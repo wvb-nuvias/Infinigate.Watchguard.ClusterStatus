@@ -37,9 +37,11 @@ string connstring = "";
 string sql = "";
 string previous_json = "";
 int rowcount = 0;
-int status=0;
+int status = 0;
+bool act = false;
 List<ClusterStatusResult> clusterstatusresults = new();
 ClusterStatusResult clusterstatusresult;
+ClusterStatusResult? previous_result;
 
 string clusterstatusresult_query="INSERT INTO librenms.clusterstatus (device_id,`datetime`,status,json) VALUES ";
 clusterstatusresult_query += "(@DeviceId,@DatumTijd,@Status,@Json);";
@@ -109,14 +111,28 @@ try {
             if (reader.HasRows) {
                 reader.Read();
                 previous_json = reader.GetString(4);
+                act = true;                
+            } else {
+                act = false;
             }
             reader.Close();
 
-            if (previous_json!=result.ToJSON()) {
-                //cluster status has changed, act...
+            if (act) {
+                if (previous_json!=result.ToJSON()) {                    
+                    previous_result=Newtonsoft.Json.JsonConvert.DeserializeObject<ClusterStatusResult>(previous_json);
 
-                status=1;
+                    if (previous_result.Result[0].Role!=result.Result[0].Role) {
+                        //
+                    }
+                    if (previous_result.Result[1].Role!=result.Result[1].Role) {
+                        //Console.WriteLine("member Role has changed here");
+                    }
+                    //role changed of a member check - could point to failover
+                    //check the other health statusses
+                    //one of the above is alertable, when same status as previous one, do nothing
 
+                    status=1;
+                }
             }
             
             cmd=new MySqlCommand(clusterstatusresult_query,conn);

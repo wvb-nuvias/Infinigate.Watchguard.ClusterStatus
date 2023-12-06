@@ -70,6 +70,17 @@ namespace Infinigate.Watchguard.Classes
                                 }
                                 if (spl[0].EndsWith(".9.0:")) {                        
                                     member!.RoleInt=int.Parse(spl[2]);
+                                    switch (member.RoleInt) {
+                                        case 0:
+                                            member.Role=ClusterRole.Idle;
+                                            break;
+                                        case 2:
+                                            member.Role=ClusterRole.Backup_Master;
+                                            break;
+                                        case 3:
+                                            member.Role=ClusterRole.Master;
+                                            break;
+                                    }
                                 }
                                 if (spl[0].EndsWith(".10.0:")) {                        
                                     member!.SystemHealthIndex=int.Parse(spl[2]);
