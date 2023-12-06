@@ -9,14 +9,17 @@ namespace Infinigate.Watchguard.Classes
     public class ClusterStatusResult
     {
         private List<MemberStatusResult>? _Result = new();
+        private int? _DeviceId = 0;
         public List<MemberStatusResult>? Result { get => _Result; set => _Result = value; }
+        public int? DeviceId { get => _DeviceId; set => _DeviceId = value; }
         
         public ClusterStatusResult() {
             _Result = new();
         }
 
-        public ClusterStatusResult(VbCollection vblist) {
+        public ClusterStatusResult(int deviceid, VbCollection vblist) {
             _Result = new();
+            _DeviceId = deviceid;            
             MemberStatusResult? member = null;
             string key="";
             string[]? spl = null;

@@ -35,9 +35,14 @@ string mysql_base = "";
 string mysql_user = "";
 string connstring = "";
 string sql = "";
+string previous_json = "";
 int rowcount = 0;
+int status=0;
 List<ClusterStatusResult> clusterstatusresults = new();
 ClusterStatusResult clusterstatusresult;
+
+string clusterstatusresult_query="INSERT INTO librenms.clusterstatus (device_id,`datetime`,status,json) VALUES ";
+clusterstatusresult_query += "(@DeviceId,@DatumTijd,@Status,@Json);";
 
 var watch = System.Diagnostics.Stopwatch.StartNew();
 
@@ -60,11 +65,16 @@ try {
         sendTeams=true;
     }
        
+    Console.WriteLine("Connecting to MySQL...");
     conn = new MySqlConnection(connstring);
     conn.Open();
+    
+    Console.WriteLine("Creating Table if not exist...");
+    sql = "CREATE TABLE if not exists librenms.clusterstatus (status_id INT NOT NULL AUTO_INCREMENT PRIMARY KEY, device_id INT, `datetime` DATETIME, status INT, json TEXT);";
+    cmd=new MySqlCommand(sql,conn);
+    cmd.ExecuteNonQuery();
 
     sql = "SELECT DISTINCT hostname, sysName, device_id, snmp_disable ,snmpver , authname ,authalgo ,authpass ,cryptoalgo ,cryptopass,community FROM librenms.devices WHERE serial LIKE '%,%' AND snmp_disable=0 AND disable_notify=0 AND disabled=0 AND `ignore`=0 AND status=1";
-
     cmd=new MySqlCommand(sql,conn);
     MySqlDataReader reader=cmd.ExecuteReader();
 
@@ -80,14 +90,41 @@ try {
             Console.WriteLine("IP:" + reader.GetString(0) + " - " + reader.GetString(1) + " (" + reader.GetString(2) + ")" );
             Console.WriteLine("---------------------------------------------------------");
                         
-            clusterstatusresult = Functions.GetClusterStatus(reader.GetString(0), reader.GetString(4), reader.GetString(5), reader.GetString(10), reader.GetString(6), reader.GetString(7), reader.GetString(8), reader.GetString(9));
-            
+            clusterstatusresult = Functions.GetClusterStatus(reader.GetInt32(2), reader.GetString(0), reader.GetString(4), reader.GetString(5), reader.GetString(10), reader.GetString(6), reader.GetString(7), reader.GetString(8), reader.GetString(9));
+                        
             Console.WriteLine(clusterstatusresult.ToJSON());
             Console.WriteLine("---------------------------------------------------------\n");
 
             clusterstatusresults.Add(clusterstatusresult);
+        }
+        reader.Close();
 
-            //TODO save in cluster_status database and events?
+        Console.WriteLine("Adding statusses to database table and treating results...");
+        foreach (ClusterStatusResult result in clusterstatusresults) {
+            status=0;
+            
+            sql = "SELECT * FROM librenms.clusterstatus WHERE device_id=" + result.DeviceId + " ORDER BY `datetime` DESC LIMIT 1";
+            cmd=new MySqlCommand(sql,conn);
+            reader=cmd.ExecuteReader();
+            if (reader.HasRows) {
+                reader.Read();
+                previous_json = reader.GetString(4);
+            }
+            reader.Close();
+
+            if (previous_json!=result.ToJSON()) {
+                //cluster status has changed, act...
+
+                status=1;
+
+            }
+            
+            cmd=new MySqlCommand(clusterstatusresult_query,conn);
+            cmd.Parameters.AddWithValue("@DeviceId", result.DeviceId);
+            cmd.Parameters.AddWithValue("@DatumTijd", DateTime.Now);
+            cmd.Parameters.AddWithValue("@Status", status);
+            cmd.Parameters.AddWithValue("@Json", result.ToJSON());            
+            cmd.ExecuteNonQuery(); 
         }
     }
 
@@ -102,8 +139,6 @@ TimeSpan t = TimeSpan.FromMilliseconds(elapsedMs);
 
 Console.WriteLine("In Total, it took " + t.ToString(@"hh\:mm\:ss\:fff"));
 
-//TODO write information to database
-
 if (conn!=null) {
     if (conn.State.ToString()=="Open") {
         conn.Close();
@@ -117,3 +152,5 @@ if (sendTeams) {
     card.Text="Cluster Check Done.\n It took " + t.ToString(@"hh\:mm\:ss\:fff");
     await tclient.PostAsync(teams_webhook_url, card);
 }
+
+//TODO add overview of cluster status history to device page in LibreNMS

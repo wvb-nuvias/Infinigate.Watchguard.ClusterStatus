@@ -5,7 +5,7 @@ using SnmpSharpNet;
 namespace Infinigate.Watchguard.Classes
 {
     public class Functions {
-        public static ClusterStatusResult GetClusterStatus(string IP) {
+        public static ClusterStatusResult GetClusterStatus(int deviceid, string IP) {
             ClusterStatusResult tmp = new();
             IpAddress ipa = new IpAddress (IP);
             UdpTarget target = new UdpTarget((IPAddress)ipa);
@@ -36,14 +36,14 @@ namespace Infinigate.Watchguard.Classes
             }
 
             if( result != null ) {                                
-                ClusterStatusResult cluster = new(result.Pdu.VbList);
+                ClusterStatusResult cluster = new(deviceid, result.Pdu.VbList);
                 tmp=cluster;
             }
 
             return tmp;
         }
     
-        public static ClusterStatusResult GetClusterStatus(string IP, string SNMPVersion, string SNMPUser, string SNMPCommunity, string AuthenticationProtocol, string AuthenticationSecret, string PrivacyProtocol, string PrivacySecret) {
+        public static ClusterStatusResult GetClusterStatus(int deviceid, string IP, string SNMPVersion, string SNMPUser, string SNMPCommunity, string AuthenticationProtocol, string AuthenticationSecret, string PrivacyProtocol, string PrivacySecret) {
             ClusterStatusResult tmp = new();
             IpAddress ipa = new IpAddress (IP);
             UdpTarget target = new UdpTarget((IPAddress)ipa);
@@ -144,11 +144,15 @@ namespace Infinigate.Watchguard.Classes
             }
 
             if( resultv3 != null ) {                                
-                ClusterStatusResult cluster = new(resultv3.Pdu.VbList);
+                ClusterStatusResult cluster = new(deviceid, resultv3.Pdu.VbList);
+                tmp=cluster;
+            }
+            if( resultv2 != null ) {                                
+                ClusterStatusResult cluster = new(deviceid, resultv2.Pdu.VbList);
                 tmp=cluster;
             }
             if( resultv1 != null ) {                                
-                ClusterStatusResult cluster = new(resultv1.Pdu.VbList);
+                ClusterStatusResult cluster = new(deviceid, resultv1.Pdu.VbList);
                 tmp=cluster;
             }
 
