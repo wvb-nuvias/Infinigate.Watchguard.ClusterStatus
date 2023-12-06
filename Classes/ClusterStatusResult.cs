@@ -6,13 +6,6 @@ using System.Text.Json.Serialization;
 
 namespace Infinigate.Watchguard.Classes
 {
-    public enum ClusterRole
-    {
-        Idle = 0,
-        Backup_Master = 2,
-        Master = 3        
-    }
-
     public class ClusterStatusResult
     {
         private List<MemberStatusResult>? _Result = new();

@@ -36,10 +36,12 @@ string mysql_user = "";
 string connstring = "";
 string sql = "";
 int rowcount = 0;
+List<ClusterStatusResult> clusterstatusresults = new();
+ClusterStatusResult clusterstatusresult;
 
 var watch = System.Diagnostics.Stopwatch.StartNew();
 
-//try {
+try {
     Console.WriteLine("Using " + configfile + "...");
     var config = Configuration.LoadFromFile(configfile);
     var section = config["MySql"];
@@ -61,7 +63,6 @@ var watch = System.Diagnostics.Stopwatch.StartNew();
     conn = new MySqlConnection(connstring);
     conn.Open();
 
-    //TODO get snmp connect variables too
     sql = "SELECT DISTINCT hostname, sysName, device_id, snmp_disable ,snmpver , authname ,authalgo ,authpass ,cryptoalgo ,cryptopass,community FROM librenms.devices WHERE serial LIKE '%,%' AND snmp_disable=0 AND disable_notify=0 AND disabled=0 AND `ignore`=0 AND status=1";
 
     cmd=new MySqlCommand(sql,conn);
@@ -78,21 +79,22 @@ var watch = System.Diagnostics.Stopwatch.StartNew();
         while (reader.Read()) {
             Console.WriteLine("IP:" + reader.GetString(0) + " - " + reader.GetString(1) + " (" + reader.GetString(2) + ")" );
             Console.WriteLine("---------------------------------------------------------");
+                        
+            clusterstatusresult = Functions.GetClusterStatus(reader.GetString(0), reader.GetString(4), reader.GetString(5), reader.GetString(10), reader.GetString(6), reader.GetString(7), reader.GetString(8), reader.GetString(9));
             
-            //ClusterStatusResult cluster = Functions.GetClusterStatus(reader.GetString(0));
-            ClusterStatusResult cluster = Functions.GetClusterStatus(reader.GetString(0), reader.GetString(4), reader.GetString(5), reader.GetString(10), reader.GetString(6), reader.GetString(7), reader.GetString(8), reader.GetString(9));
-            
-            Console.WriteLine(cluster.ToJSON());
+            Console.WriteLine(clusterstatusresult.ToJSON());
             Console.WriteLine("---------------------------------------------------------\n");
+
+            clusterstatusresults.Add(clusterstatusresult);
 
             //TODO save in cluster_status database and events?
         }
     }
 
     Console.WriteLine("Done Cluster Checks.");
-//} catch (Exception ex) {
-    //Console.WriteLine(ex.Message);
-//}
+} catch (Exception ex) {
+    Console.WriteLine(ex.Message);
+}
 
 watch.Stop();
 elapsedMs = watch.ElapsedMilliseconds;
