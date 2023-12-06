@@ -20,7 +20,7 @@ using System.Runtime.InteropServices;
 using SharpConfig;
 using Infinigate.Watchguard.Classes;
 
-MySqlConnection conn = null;
+MySqlConnection? conn = null;
 MySqlCommand cmd;
 long elapsedMs=0;
 bool sendTeams=false;

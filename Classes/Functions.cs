@@ -17,11 +17,8 @@ namespace Infinigate.Watchguard.Classes
                 return tmp;
             }
 
-            // Construct a Protocol Data Unit (PDU)
             Pdu pdu = new Pdu();
-            // Set the request type (default is Get)
-            pdu.Type = PduType.GetBulk;
-            // Add variables you wish to query
+            pdu.Type = PduType.GetBulk;            
             pdu.VbList.Add("1.3.6.1.4.1.3097.6.6");
 
             param.SecurityName.Set("ois");
@@ -29,8 +26,7 @@ namespace Infinigate.Watchguard.Classes
             param.AuthenticationSecret.Set("ois_Nagios_SNMP4");
             param.Privacy = PrivacyProtocols.DES;
             param.PrivacySecret.Set("SNMP4ois_Nagios");
-
-            // Make a request. Request can throw a number of errors so wrap it in try/catch
+            
             SnmpV3Packet? result;
             try {
                 result = (SnmpV3Packet)target.Request(pdu, param);
@@ -53,8 +49,9 @@ namespace Infinigate.Watchguard.Classes
             UdpTarget target = new UdpTarget((IPAddress)ipa);
             
             Pdu pdu = new Pdu();
-            
+           
             SnmpV1Packet? resultv1 = null;
+            SnmpV2Packet? resultv2 = null;
             SnmpV3Packet? resultv3 = null;
 
             switch (SNMPVersion) {
@@ -87,6 +84,32 @@ namespace Infinigate.Watchguard.Classes
                     }
                     break;
                 case "v2c":
+                    OctetString community2 = new OctetString(SNMPCommunity);
+                    AgentParameters paramv2 = new AgentParameters(community2);
+                    paramv2.Version = SnmpVersion.Ver2;
+
+                    pdu.Type = PduType.Get;
+
+                    pdu.VbList.Add("1.3.6.1.4.1.3097.6.6.1.0");
+                    pdu.VbList.Add("1.3.6.1.4.1.3097.6.6.2.0");                    
+                    pdu.VbList.Add("1.3.6.1.4.1.3097.6.6.3.0");
+                    pdu.VbList.Add("1.3.6.1.4.1.3097.6.6.4.0");
+                    pdu.VbList.Add("1.3.6.1.4.1.3097.6.6.5.0");
+                    pdu.VbList.Add("1.3.6.1.4.1.3097.6.6.6.0");
+                    pdu.VbList.Add("1.3.6.1.4.1.3097.6.6.7.0");
+                    pdu.VbList.Add("1.3.6.1.4.1.3097.6.6.8.0");
+                    pdu.VbList.Add("1.3.6.1.4.1.3097.6.6.9.0");
+                    pdu.VbList.Add("1.3.6.1.4.1.3097.6.6.10.0");
+                    pdu.VbList.Add("1.3.6.1.4.1.3097.6.6.11.0");
+                    pdu.VbList.Add("1.3.6.1.4.1.3097.6.6.12.0");
+                    pdu.VbList.Add("1.3.6.1.4.1.3097.6.6.13.0");
+                    
+                    try {
+                        resultv2 = (SnmpV2Packet)target.Request(pdu,paramv2);
+                    } catch( Exception ex ) {
+                        Console.WriteLine ("Error: {0}", ex.Message);
+                        resultv2 = null;
+                    }
 
                     break;
                 case "v3":
@@ -100,6 +123,10 @@ namespace Infinigate.Watchguard.Classes
 
                     pdu.Type = PduType.GetBulk;
                     pdu.VbList.Add("1.3.6.1.4.1.3097.6.6");
+                    
+                    //einddatum featurekey get
+                    //pdu.Type = PduType.Get;
+                    //pdu.VbList.Add("1.3.6.1.4.1.3097.6.1.5.0");
 
                     param.SecurityName.Set(SNMPUser);
                     param.Authentication = AuthenticationProtocolFromString(AuthenticationProtocol);

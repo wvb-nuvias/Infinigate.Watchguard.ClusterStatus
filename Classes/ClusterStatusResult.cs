@@ -42,7 +42,7 @@ namespace Infinigate.Watchguard.Classes
                                     member.SerialNumber=spl[2];
                                 }
                                 if (spl[0].EndsWith(".3.0:")) {                        
-                                    member.RoleInt=int.Parse(spl[2]);
+                                    member!.RoleInt=int.Parse(spl[2]);
                                     switch (member.RoleInt) {
                                         case 0:
                                             member.Role=ClusterRole.Idle;
@@ -56,16 +56,16 @@ namespace Infinigate.Watchguard.Classes
                                     }
                                 }
                                 if (spl[0].EndsWith(".4.0:")) {                        
-                                    member.SystemHealthIndex=int.Parse(spl[2]);
+                                    member!.SystemHealthIndex=int.Parse(spl[2]);
                                 }
                                 if (spl[0].EndsWith(".5.0:")) {                        
-                                    member.HardwareHealthIndex=int.Parse(spl[2]);
+                                    member!.HardwareHealthIndex=int.Parse(spl[2]);
                                 }
                                 if (spl[0].EndsWith(".6.0:")) {                        
-                                    member.MonitoredPortHealthIndex=int.Parse(spl[2]);
+                                    member!.MonitoredPortHealthIndex=int.Parse(spl[2]);
                                 }
                                 if (spl[0].EndsWith(".7.0:")) {
-                                    member.WeightedAvgIndex=int.Parse(spl[2]);
+                                    member!.WeightedAvgIndex=int.Parse(spl[2]);
                                     _Result.Add(member);                        
                                 }      
                                 if (spl[0].EndsWith(".8.0:")) {
@@ -73,19 +73,19 @@ namespace Infinigate.Watchguard.Classes
                                     member.SerialNumber=spl[2];
                                 }
                                 if (spl[0].EndsWith(".9.0:")) {                        
-                                    member.RoleInt=int.Parse(spl[2]);
+                                    member!.RoleInt=int.Parse(spl[2]);
                                 }
                                 if (spl[0].EndsWith(".10.0:")) {                        
-                                    member.SystemHealthIndex=int.Parse(spl[2]);
+                                    member!.SystemHealthIndex=int.Parse(spl[2]);
                                 }
                                 if (spl[0].EndsWith(".11.0:")) {                        
-                                    member.HardwareHealthIndex=int.Parse(spl[2]);
+                                    member!.HardwareHealthIndex=int.Parse(spl[2]);
                                 }
                                 if (spl[0].EndsWith(".12.0:")) {                        
-                                    member.MonitoredPortHealthIndex=int.Parse(spl[2]);
+                                    member!.MonitoredPortHealthIndex=int.Parse(spl[2]);
                                 }
                                 if (spl[0].EndsWith(".13.0:")) {
-                                    member.WeightedAvgIndex=int.Parse(spl[2]);
+                                    member!.WeightedAvgIndex=int.Parse(spl[2]);
                                     _Result.Add(member);                        
                                 }              
                             }                            
