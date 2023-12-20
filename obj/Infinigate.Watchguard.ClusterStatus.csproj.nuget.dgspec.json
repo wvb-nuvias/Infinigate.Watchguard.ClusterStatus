@@ -56,6 +56,10 @@
               "target": "Package",
               "version": "[3.2.9.1, )"
             },
+            "SpryngApiHttpDotNet": {
+              "target": "Package",
+              "version": "[1.6.1, )"
+            },
             "Teamshook.Net": {
               "target": "Package",
               "version": "[0.1.0.18, )"
@@ -85,7 +89,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\7.0.403\\RuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.100\\RuntimeIdentifierGraph.json"
         }
       }
     }

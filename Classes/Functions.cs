@@ -1,11 +1,12 @@
 using System;
 using System.Net;
 using SnmpSharpNet;
+using TeamsHook.NET;
 
 namespace Infinigate.Watchguard.Classes
 {
     public class Functions {
-        public static ClusterStatusResult GetClusterStatus(int deviceid, string IP) {
+        public static ClusterStatusResult GetClusterStatus(int deviceid, string devicename, string IP) {
             ClusterStatusResult tmp = new();
             IpAddress ipa = new IpAddress (IP);
             UdpTarget target = new UdpTarget((IPAddress)ipa);
@@ -36,14 +37,14 @@ namespace Infinigate.Watchguard.Classes
             }
 
             if( result != null ) {                                
-                ClusterStatusResult cluster = new(deviceid, result.Pdu.VbList);
+                ClusterStatusResult cluster = new(deviceid, devicename, result.Pdu.VbList);
                 tmp=cluster;
             }
 
             return tmp;
         }
     
-        public static ClusterStatusResult GetClusterStatus(int deviceid, string IP, string SNMPVersion, string SNMPUser, string SNMPCommunity, string AuthenticationProtocol, string AuthenticationSecret, string PrivacyProtocol, string PrivacySecret) {
+        public static ClusterStatusResult GetClusterStatus(int deviceid, string devicename, string IP, string SNMPVersion, string SNMPUser, string SNMPCommunity, string AuthenticationProtocol, string AuthenticationSecret, string PrivacyProtocol, string PrivacySecret) {
             ClusterStatusResult tmp = new();
             IpAddress ipa = new IpAddress (IP);
             UdpTarget target = new UdpTarget((IPAddress)ipa);
@@ -144,15 +145,15 @@ namespace Infinigate.Watchguard.Classes
             }
 
             if( resultv3 != null ) {                                
-                ClusterStatusResult cluster = new(deviceid, resultv3.Pdu.VbList);
+                ClusterStatusResult cluster = new(deviceid, devicename, resultv3.Pdu.VbList);
                 tmp=cluster;
             }
             if( resultv2 != null ) {                                
-                ClusterStatusResult cluster = new(deviceid, resultv2.Pdu.VbList);
+                ClusterStatusResult cluster = new(deviceid, devicename, resultv2.Pdu.VbList);
                 tmp=cluster;
             }
             if( resultv1 != null ) {                                
-                ClusterStatusResult cluster = new(deviceid, resultv1.Pdu.VbList);
+                ClusterStatusResult cluster = new(deviceid, devicename, resultv1.Pdu.VbList);
                 tmp=cluster;
             }
 
@@ -175,6 +176,14 @@ namespace Infinigate.Watchguard.Classes
             if (priv=="AES192") tmp = PrivacyProtocols.AES192;
             if (priv=="AES256") tmp = PrivacyProtocols.AES256;
             return tmp;
+        }
+
+        public async static void SendTeamsMessage(string webhook_url, string title, string message) {
+            TeamsHookClient tclient = new();
+            MessageCard card = new();
+            card.Title=title;
+            card.Text=message;            
+            tclient.PostAsync(webhook_url, card);
         }
     }
 }

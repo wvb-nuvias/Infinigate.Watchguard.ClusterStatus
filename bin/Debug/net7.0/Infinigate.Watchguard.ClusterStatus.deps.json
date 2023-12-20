@@ -10,6 +10,7 @@
         "dependencies": {
           "Newtonsoft.Json": "13.0.3",
           "SharpConfig": "3.2.9.1",
+          "SpryngApiHttpDotNet": "1.6.1",
           "TeamsHook.NET": "0.1.0.18",
           "MySql.Data": "8.2.0",
           "SnmpSharpNet": "0.9.6"
@@ -155,6 +156,14 @@
           "lib/SnmpSharpNet.dll": {
             "assemblyVersion": "0.9.6.0",
             "fileVersion": "0.9.6.0"
+          }
+        }
+      },
+      "SpryngApiHttpDotNet/1.6.1": {
+        "runtime": {
+          "lib/net45/SpryngApiHttpDotNet.dll": {
+            "assemblyVersion": "1.6.1.0",
+            "fileVersion": "1.6.1.0"
           }
         }
       },
@@ -435,6 +444,13 @@
       "sha512": "sha512-RWS0zReCax5r90/qG6tx89uhMoX5O/saOl+D2E95FjP5914CaBCY6uiZGzLNixh+ysgFcb/40MlBo6icYslWaA==",
       "path": "snmpsharpnet/0.9.6",
       "hashPath": "snmpsharpnet.0.9.6.nupkg.sha512"
+    },
+    "SpryngApiHttpDotNet/1.6.1": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-XkNO6QyQzK287x+CCmByl5ueyzTnl0iKpVML9DLj7WZ9JRyxSKcfTq2Avy6dCoqrIfbRAp2Gq/JE/zea/DsZzw==",
+      "path": "spryngapihttpdotnet/1.6.1",
+      "hashPath": "spryngapihttpdotnet.1.6.1.nupkg.sha512"
     },
     "System.Buffers/4.5.1": {
       "type": "package",

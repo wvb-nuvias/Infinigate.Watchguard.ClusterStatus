@@ -13,160 +13,256 @@ using System.Collections.Generic;
 using SnmpSharpNet;
 using MySql.Data;
 using MySql.Data.MySqlClient;
-using TeamsHook.NET;
 using System.Linq;
 using System.Text;
 using System.Runtime.InteropServices;
 using SharpConfig;
 using Infinigate.Watchguard.Classes;
+using Spryng;
+using Spryng.Models.Sms;
 
-MySqlConnection? conn = null;
-MySqlCommand cmd;
-long elapsedMs=0;
-bool sendTeams=false;
+class Program
+{        
+    static MySqlConnection? conn = null;
+    static MySqlCommand? cmd = null;
+    static long elapsedMs=0;
 
-string homepath = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-string configfile = homepath + "/.Infinigate.Watchguard.ClusterStatus";
+    static string homepath = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+    static string configfile = homepath + "/.Infinigate.Watchguard.ClusterStatus";
 
-string teams_webhook_url = "";
-string mysql_pass = "";
-string mysql_host = "";
-string mysql_base = "";
-string mysql_user = "";
-string connstring = "";
-string sql = "";
-string previous_json = "";
-int rowcount = 0;
-int status = 0;
-bool act = false;
-List<ClusterStatusResult> clusterstatusresults = new();
-ClusterStatusResult clusterstatusresult;
-ClusterStatusResult? previous_result;
-
-string clusterstatusresult_query="INSERT INTO librenms.clusterstatus (device_id,`datetime`,status,json) VALUES ";
-clusterstatusresult_query += "(@DeviceId,@DatumTijd,@Status,@Json);";
-
-var watch = System.Diagnostics.Stopwatch.StartNew();
-
-try {
-    Console.WriteLine("Using " + configfile + "...");
-    var config = Configuration.LoadFromFile(configfile);
-    var section = config["MySql"];
-
-    mysql_pass = section["mysql_pass"].StringValue;
-    mysql_host = section["mysql_host"].StringValue;
-    mysql_base = section["mysql_base"].StringValue;
-    mysql_user = section["mysql_user"].StringValue;
-
-    connstring = "Server=" + mysql_host + ";Database=" + mysql_base + ";Uid=" + mysql_user + ";Pwd=" + mysql_pass + ";SslMode=none;convert zero datetime=True";
-
-    section = config["Teams"];
-    teams_webhook_url = section["webhook_url_clusterstatus"].StringValue;
-
-    if (teams_webhook_url!="") {
-        sendTeams=true;
-    }
-       
-    Console.WriteLine("Connecting to MySQL...");
-    conn = new MySqlConnection(connstring);
-    conn.Open();
+    static string teams_webhook_url = "";
+    static string mysql_pass = "";
+    static string mysql_host = "";
+    static string mysql_base = "";
+    static string mysql_user = "";
+    static string connstring = "";
+    static string spryng_user = "";
+    static string spryng_pass = "";
+    static string spryng_message = "";
+    static string teams_message = "";
+    static string sql = "";
+    static string previous_json = "";
+    static int rowcount = 0;
+    static int status = 0;
+    static bool act = false;
+    static bool alert = false;
+    static bool portsnok = false;
+    static bool sendTeams = false;
+    static bool sendReport = false;
+    static bool clusternok = false;
     
-    Console.WriteLine("Creating Table if not exist...");
-    sql = "CREATE TABLE if not exists librenms.clusterstatus (status_id INT NOT NULL AUTO_INCREMENT PRIMARY KEY, device_id INT, `datetime` DATETIME, status INT, json TEXT);";
-    cmd=new MySqlCommand(sql,conn);
-    cmd.ExecuteNonQuery();
+    static List<ClusterStatusResult> clusterstatusresults = new();
+    static ClusterStatusResult? clusterstatusresult;
+    static ClusterStatusResult? previous_result;
 
-    sql = "SELECT DISTINCT hostname, sysName, device_id, snmp_disable ,snmpver , authname ,authalgo ,authpass ,cryptoalgo ,cryptopass,community FROM librenms.devices WHERE serial LIKE '%,%' AND snmp_disable=0 AND disable_notify=0 AND disabled=0 AND `ignore`=0 AND status=1";
-    cmd=new MySqlCommand(sql,conn);
-    MySqlDataReader reader=cmd.ExecuteReader();
+    static string clusterstatusresult_query="INSERT INTO librenms.clusterstatus (device_id,`datetime`,status,json) VALUES (@DeviceId,@DatumTijd,@Status,@Json);";
 
-    if (reader.HasRows) {
-        while (reader.Read()) {
-            rowcount++;
-        }
-        reader.Close();
-        Console.WriteLine(rowcount + " clusters found.");
-
-        reader=cmd.ExecuteReader();
-        while (reader.Read()) {
-            Console.WriteLine("IP:" + reader.GetString(0) + " - " + reader.GetString(1) + " (" + reader.GetString(2) + ")" );
-            Console.WriteLine("---------------------------------------------------------");
-                        
-            clusterstatusresult = Functions.GetClusterStatus(reader.GetInt32(2), reader.GetString(0), reader.GetString(4), reader.GetString(5), reader.GetString(10), reader.GetString(6), reader.GetString(7), reader.GetString(8), reader.GetString(9));
-                        
-            Console.WriteLine(clusterstatusresult.ToJSON());
-            Console.WriteLine("---------------------------------------------------------\n");
-
-            clusterstatusresults.Add(clusterstatusresult);
-        }
-        reader.Close();
-
-        Console.WriteLine("Adding statusses to database table and treating results...");
-        foreach (ClusterStatusResult result in clusterstatusresults) {
-            status=0;
-            
-            sql = "SELECT * FROM librenms.clusterstatus WHERE device_id=" + result.DeviceId + " ORDER BY `datetime` DESC LIMIT 1";
-            cmd=new MySqlCommand(sql,conn);
-            reader=cmd.ExecuteReader();
-            if (reader.HasRows) {
-                reader.Read();
-                previous_json = reader.GetString(4);
-                act = true;                
-            } else {
-                act = false;
+    static void Main(string[] args) {
+        if (args.Length!=0) {
+            if (args[0]=="report") {
+                sendReport=true;
             }
-            reader.Close();
+        }
 
-            if (act) {
-                if (previous_json!=result.ToJSON()) {                    
-                    previous_result=Newtonsoft.Json.JsonConvert.DeserializeObject<ClusterStatusResult>(previous_json);
+        var watch = System.Diagnostics.Stopwatch.StartNew();
 
-                    if (previous_result.Result[0].Role!=result.Result[0].Role) {
-                        //
+        try {
+            Console.WriteLine("Using " + configfile + "...");
+            var config = Configuration.LoadFromFile(configfile);
+            var section = config["MySql"];
+
+            mysql_pass = section["mysql_pass"].StringValue;
+            mysql_host = section["mysql_host"].StringValue;
+            mysql_base = section["mysql_base"].StringValue;
+            mysql_user = section["mysql_user"].StringValue;
+
+            connstring = "Server=" + mysql_host + ";Database=" + mysql_base + ";Uid=" + mysql_user + ";Pwd=" + mysql_pass + ";SslMode=none;convert zero datetime=True";
+
+            section = config["Spryng"];
+            spryng_user = section["username"].StringValue;
+            spryng_pass = section["password"].StringValue;
+
+            section = config["Teams"];
+            teams_webhook_url = section["webhook_url_clusterstatus"].StringValue;
+
+            if (teams_webhook_url!="") {
+                sendTeams=true;
+            }
+            
+            Console.WriteLine("Connecting to MySQL...");
+            conn = new MySqlConnection(connstring);
+            conn.Open();
+            
+            Console.WriteLine("Creating Table if not exist...");
+            sql = "CREATE TABLE if not exists librenms.clusterstatus (status_id INT NOT NULL AUTO_INCREMENT PRIMARY KEY, device_id INT, `datetime` DATETIME, status INT, json TEXT);";
+            cmd=new MySqlCommand(sql,conn);
+            cmd.ExecuteNonQuery();
+
+            sql = "SELECT DISTINCT hostname, sysName, device_id, snmp_disable ,snmpver , authname ,authalgo ,authpass ,cryptoalgo ,cryptopass,community FROM librenms.devices WHERE serial LIKE '%,%' AND snmp_disable=0 AND disable_notify=0 AND disabled=0 AND `ignore`=0 AND status=1";
+            cmd=new MySqlCommand(sql,conn);
+            MySqlDataReader reader=cmd.ExecuteReader();
+
+            if (reader.HasRows) {
+                while (reader.Read()) {
+                    rowcount++;
+                }
+                reader.Close();
+                Console.WriteLine(rowcount + " clusters found.");
+
+                //debug
+                //sendReport=true;
+
+                reader=cmd.ExecuteReader();
+                while (reader.Read()) {
+                    if (!sendReport) {
+                        Console.WriteLine("IP:" + reader.GetString(0) + " - " + reader.GetString(1) + " (" + reader.GetString(2) + ")" );
+                        Console.WriteLine("---------------------------------------------------------");
                     }
-                    if (previous_result.Result[1].Role!=result.Result[1].Role) {
-                        //Console.WriteLine("member Role has changed here");
-                    }
-                    //role changed of a member check - could point to failover
-                    //check the other health statusses
-                    //one of the above is alertable, when same status as previous one, do nothing
 
-                    status=1;
+                    clusterstatusresult = Functions.GetClusterStatus(reader.GetInt32(2), reader.GetString(1), reader.GetString(0), reader.GetString(4), reader.GetString(5), reader.GetString(10), reader.GetString(6), reader.GetString(7), reader.GetString(8), reader.GetString(9));
+                                
+                    if (!sendReport) {
+                        Console.WriteLine(clusterstatusresult.ToJSON());
+                        Console.WriteLine("---------------------------------------------------------\n");
+                    }
+
+                    clusterstatusresults.Add(clusterstatusresult);
+                }
+                reader.Close();
+
+                Console.WriteLine("Adding statusses to database table and treating results...");
+                foreach (ClusterStatusResult result in clusterstatusresults) {
+                    status = 0;
+                    alert = false;
+                    portsnok = false;
+                    clusternok = false;
+                    
+                    if (!sendReport) {
+                        sql = "SELECT * FROM librenms.clusterstatus WHERE device_id=" + result.DeviceId + " ORDER BY `datetime` DESC LIMIT 1";
+                        cmd = new MySqlCommand(sql,conn);
+                        reader=cmd.ExecuteReader();
+                        if (reader.HasRows) {
+                            reader.Read();
+                            previous_json = reader.GetString(4);
+                            act = true;                
+                        } else {
+                            act = false;
+                        }
+                        reader.Close();
+                    }
+                    //debug
+                    //act=true;
+                    
+                    if (sendReport) {
+                        if (result.Result[0].RoleInt==-1 || result.Result[1].RoleInt==-1) {
+                            clusternok=true;
+                        }
+                        if (result.Result[0].MonitoredPortHealthIndex<100 || result.Result[1].MonitoredPortHealthIndex<100) {
+                            clusternok=true;
+                        }
+                        if (clusternok) {
+                            teams_message += result.DeviceName + " cluster is Not OK.\n";
+                        } else {
+                            teams_message += result.DeviceName + " cluster is OK.\n";
+                        }                
+                    } else {                        
+                        if (act) {
+                            if (previous_json!=result.ToJSON()) {                    
+                                previous_result=Newtonsoft.Json.JsonConvert.DeserializeObject<ClusterStatusResult>(previous_json);
+
+                                if (previous_result.Result[0].Role!=result.Result[0].Role) {                        
+                                    if (result.Result[0].RoleInt==-1 || result.Result[0].RoleInt<=2) {
+                                        alert=true;
+                                        spryng_message = "The cluster status of " + result.DeviceName + " has changed.\n";
+                                        spryng_message += "From " + previous_result.Result[0].Role.ToString() + " ";
+                                        spryng_message += "To " + result.Result[0].Role.ToString() + " ";
+                                    }
+                                }
+                                if (previous_result.Result[1].Role!=result.Result[1].Role) {                        
+                                    if (result.Result[1].RoleInt==-1 || result.Result[1].RoleInt<=2) {
+                                        alert=true;
+                                        spryng_message = "The cluster status of " + result.DeviceName + " has changed.\n";
+                                        spryng_message += "From " + previous_result.Result[1].Role.ToString() + " ";
+                                        spryng_message += "To " + result.Result[1].Role.ToString() + " ";
+                                    }
+                                }
+                                
+                                if (previous_result.Result[0].MonitoredPortHealthIndex!=result.Result[0].MonitoredPortHealthIndex) {                                                
+                                    portsnok=true;
+                                    spryng_message = "The cluster port health of " + result.DeviceName + " (" + result.Result[0].Role.ToString() + ") is too low (" + result.Result[0].MonitoredPortHealthIndex + ").\n";                        
+                                }
+                                if (previous_result.Result[1].MonitoredPortHealthIndex!=result.Result[1].MonitoredPortHealthIndex) {                                                
+                                    portsnok=true;
+                                    spryng_message = "The cluster port health of " + result.DeviceName + " (" + result.Result[1].Role.ToString() + ") is too low (" + result.Result[1].MonitoredPortHealthIndex + ").\n";
+                                }
+                                                    
+                                if (alert || portsnok) {
+                                    Console.WriteLine(spryng_message);
+                                    var spryngclient = SpryngHttpClient.CreateClientWithPassword(spryng_user, spryng_pass);
+
+                                    SmsRequest request = new SmsRequest()
+                                    {                            
+                                        Destinations = new string[] { "32477081318" },
+                                        Sender = "RedAlert",
+                                        Body = "RED Alert - Cluster Check\n\n" + spryng_message
+                                    };
+
+                                    try
+                                    {
+                                        spryngclient.ExecuteSmsRequest(request);
+                                        Console.WriteLine("SMS has been send!");
+                                    }
+                                    catch (SpryngHttpClientException ex)
+                                    {
+                                        Console.WriteLine("Send SMS : An Exception occured!\n{0}", ex.Message);
+                                    }
+
+                                    if (sendTeams) {
+                                        //send teams message
+                                    }                        
+                                }
+
+                                status=1;
+                            }
+                        }
+                    }
+
+                    cmd=new MySqlCommand(clusterstatusresult_query,conn);
+                    cmd.Parameters.AddWithValue("@DeviceId", result.DeviceId);
+                    cmd.Parameters.AddWithValue("@DatumTijd", DateTime.Now);
+                    cmd.Parameters.AddWithValue("@Status", status);
+                    cmd.Parameters.AddWithValue("@Json", result.ToJSON());            
+                    cmd.ExecuteNonQuery(); 
                 }
             }
-            
-            cmd=new MySqlCommand(clusterstatusresult_query,conn);
-            cmd.Parameters.AddWithValue("@DeviceId", result.DeviceId);
-            cmd.Parameters.AddWithValue("@DatumTijd", DateTime.Now);
-            cmd.Parameters.AddWithValue("@Status", status);
-            cmd.Parameters.AddWithValue("@Json", result.ToJSON());            
-            cmd.ExecuteNonQuery(); 
+
+            Console.WriteLine("Done Cluster Checks.");
+        } catch (Exception ex) {
+            Console.WriteLine(ex.Message);
+        }
+
+        if (sendReport) {
+            Console.WriteLine("\nReport:\n------\n" + teams_message);
+        }
+
+        watch.Stop();
+        elapsedMs = watch.ElapsedMilliseconds;
+        TimeSpan t = TimeSpan.FromMilliseconds(elapsedMs);
+
+        Console.WriteLine("In Total, it took " + t.ToString(@"hh\:mm\:ss\:fff"));
+
+        if (conn!=null) {
+            if (conn.State.ToString()=="Open") {
+                conn.Close();
+            }
+        }
+
+        if (sendTeams && sendReport) {
+            Task.Run(() => 
+            {
+                Functions.SendTeamsMessage(teams_webhook_url,"Check of Clusters",teams_message + "\n" + "Cluster Check Done.\n It took " + t.ToString(@"hh\:mm\:ss\:fff"));
+            });            
         }
     }
-
-    Console.WriteLine("Done Cluster Checks.");
-} catch (Exception ex) {
-    Console.WriteLine(ex.Message);
 }
-
-watch.Stop();
-elapsedMs = watch.ElapsedMilliseconds;
-TimeSpan t = TimeSpan.FromMilliseconds(elapsedMs);
-
-Console.WriteLine("In Total, it took " + t.ToString(@"hh\:mm\:ss\:fff"));
-
-if (conn!=null) {
-    if (conn.State.ToString()=="Open") {
-        conn.Close();
-    }
-}
-
-if (sendTeams) {
-    var tclient = new TeamsHookClient();
-    var card = new MessageCard();
-    card.Title="Check of Clusters";
-    card.Text="Cluster Check Done.\n It took " + t.ToString(@"hh\:mm\:ss\:fff");
-    await tclient.PostAsync(teams_webhook_url, card);
-}
-
 //TODO add overview of cluster status history to device page in LibreNMS

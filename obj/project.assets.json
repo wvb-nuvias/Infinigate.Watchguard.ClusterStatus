@@ -197,6 +197,15 @@
           "lib/SnmpSharpNet.dll": {}
         }
       },
+      "SpryngApiHttpDotNet/1.6.1": {
+        "type": "package",
+        "compile": {
+          "lib/net45/SpryngApiHttpDotNet.dll": {}
+        },
+        "runtime": {
+          "lib/net45/SpryngApiHttpDotNet.dll": {}
+        }
+      },
       "System.Buffers/4.5.1": {
         "type": "package",
         "compile": {
@@ -849,6 +858,18 @@
         "lib/SnmpSharpNet.dll",
         "snmpsharpnet.0.9.6.nupkg.sha512",
         "snmpsharpnet.nuspec"
+      ]
+    },
+    "SpryngApiHttpDotNet/1.6.1": {
+      "sha512": "XkNO6QyQzK287x+CCmByl5ueyzTnl0iKpVML9DLj7WZ9JRyxSKcfTq2Avy6dCoqrIfbRAp2Gq/JE/zea/DsZzw==",
+      "type": "package",
+      "path": "spryngapihttpdotnet/1.6.1",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "lib/net45/SpryngApiHttpDotNet.dll",
+        "spryngapihttpdotnet.1.6.1.nupkg.sha512",
+        "spryngapihttpdotnet.nuspec"
       ]
     },
     "System.Buffers/4.5.1": {
@@ -1910,6 +1931,7 @@
     "net7.0": [
       "NewtonSoft.JSON >= 13.0.3",
       "SharpConfig >= 3.2.9.1",
+      "SpryngApiHttpDotNet >= 1.6.1",
       "Teamshook.Net >= 0.1.0.18",
       "mysql.data >= 8.2.0",
       "snmpsharpnet >= 0.9.6"
@@ -1971,6 +1993,10 @@
             "target": "Package",
             "version": "[3.2.9.1, )"
           },
+          "SpryngApiHttpDotNet": {
+            "target": "Package",
+            "version": "[1.6.1, )"
+          },
           "Teamshook.Net": {
             "target": "Package",
             "version": "[0.1.0.18, )"
@@ -2000,7 +2026,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\7.0.403\\RuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.100\\RuntimeIdentifierGraph.json"
       }
     }
   }

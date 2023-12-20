@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Infinigate.Watchguard.ClusterStatus")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+46ef810d3b8af01be54e775bd9d7ae9895247884")]
 [assembly: System.Reflection.AssemblyProductAttribute("Infinigate.Watchguard.ClusterStatus")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Infinigate.Watchguard.ClusterStatus")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

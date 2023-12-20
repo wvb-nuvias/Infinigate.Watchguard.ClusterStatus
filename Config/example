@@ -11,5 +11,9 @@ mysql_host = (mysql server)
 mysql_base = (mysql database)
 mysql_user = (mysql user)
 
+[Spryng]
+username = (spryng username)
+password = (spryng password)
+
 [Teams]
 webhook_url_clusterstatus = (teams incoming webhook channel url)

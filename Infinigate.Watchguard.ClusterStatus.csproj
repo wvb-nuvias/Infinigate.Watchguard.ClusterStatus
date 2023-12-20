@@ -13,6 +13,7 @@
     <PackageReference Include="NewtonSoft.JSON" Version="13.0.3" />
     <PackageReference Include="SharpConfig" Version="3.2.9.1" />
     <PackageReference Include="snmpsharpnet" Version="0.9.6" />
+    <PackageReference Include="SpryngApiHttpDotNet" Version="1.6.1" />
     <PackageReference Include="Teamshook.Net" Version="0.1.0.18" />
   </ItemGroup>
 
