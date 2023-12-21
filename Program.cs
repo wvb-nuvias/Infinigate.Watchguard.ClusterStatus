@@ -20,6 +20,7 @@ using SharpConfig;
 using Infinigate.Watchguard.Classes;
 using Spryng;
 using Spryng.Models.Sms;
+using Newtonsoft.Json.Linq;
 
 class Program
 {        
@@ -40,6 +41,7 @@ class Program
     static string spryng_pass = "";
     static string spryng_message = "";
     static string teams_message = "";
+    static string spryng_phone = "";
     static string sql = "";
     static string previous_json = "";
     static int rowcount = 0;
@@ -63,6 +65,9 @@ class Program
                 sendReport=true;
             }
         }
+
+        //debug
+        sendReport=true;
 
         var watch = System.Diagnostics.Stopwatch.StartNew();
 
@@ -92,6 +97,22 @@ class Program
             Console.WriteLine("Connecting to MySQL...");
             conn = new MySqlConnection(connstring);
             conn.Open();
+
+            sql = "SELECT transport_config FROM librenms.alert_transports at2 LEFT JOIN librenms.transport_group_transport tgt ON at2.transport_id = tgt.transport_id WHERE tgt.transport_group_id = 1";
+            cmd = new MySqlCommand(sql,conn);
+            MySqlDataReader reader=cmd.ExecuteReader();
+            if (reader.HasRows) {
+                reader.Read();                                            
+                var jsonObject = JObject.Parse(reader.GetString(0));
+                spryng_phone=jsonObject.SelectToken("spryng-mobile").ToString();;
+
+            }
+            reader.Close();
+
+            //debug
+            spryng_phone="32477081318";
+
+            Console.WriteLine("Mobile Nr for SMS : " + spryng_phone);
             
             Console.WriteLine("Creating Table if not exist...");
             sql = "CREATE TABLE if not exists librenms.clusterstatus (status_id INT NOT NULL AUTO_INCREMENT PRIMARY KEY, device_id INT, `datetime` DATETIME, status INT, json TEXT);";
@@ -100,7 +121,7 @@ class Program
 
             sql = "SELECT DISTINCT hostname, sysName, device_id, snmp_disable ,snmpver , authname ,authalgo ,authpass ,cryptoalgo ,cryptopass,community FROM librenms.devices WHERE serial LIKE '%,%' AND snmp_disable=0 AND disable_notify=0 AND disabled=0 AND `ignore`=0 AND status=1";
             cmd=new MySqlCommand(sql,conn);
-            MySqlDataReader reader=cmd.ExecuteReader();
+            reader=cmd.ExecuteReader();
 
             if (reader.HasRows) {
                 while (reader.Read()) {
@@ -108,9 +129,6 @@ class Program
                 }
                 reader.Close();
                 Console.WriteLine(rowcount + " clusters found.");
-
-                //debug
-                //sendReport=true;
 
                 reader=cmd.ExecuteReader();
                 while (reader.Read()) {
@@ -136,6 +154,7 @@ class Program
                     alert = false;
                     portsnok = false;
                     clusternok = false;
+                    spryng_message = "";
                     
                     if (!sendReport) {
                         sql = "SELECT * FROM librenms.clusterstatus WHERE device_id=" + result.DeviceId + " ORDER BY `datetime` DESC LIMIT 1";
@@ -154,7 +173,7 @@ class Program
                     //act=true;
                     
                     if (sendReport) {
-                        if (result.Result[0].RoleInt==-1 || result.Result[1].RoleInt==-1) {
+                        if ((result.Result[0].RoleInt!=2 && result.Result[0].RoleInt!=3) || (result.Result[1].RoleInt!=2 && result.Result[1].RoleInt!=3)) {
                             clusternok=true;
                         }
                         if (result.Result[0].MonitoredPortHealthIndex<100 || result.Result[1].MonitoredPortHealthIndex<100) {
@@ -170,39 +189,35 @@ class Program
                             if (previous_json!=result.ToJSON()) {                    
                                 previous_result=Newtonsoft.Json.JsonConvert.DeserializeObject<ClusterStatusResult>(previous_json);
 
-                                if (previous_result.Result[0].Role!=result.Result[0].Role) {                        
-                                    if (result.Result[0].RoleInt==-1 || result.Result[0].RoleInt<=2) {
-                                        alert=true;
-                                        spryng_message = "The cluster status of " + result.DeviceName + " has changed.\n";
-                                        spryng_message += "From " + previous_result.Result[0].Role.ToString() + " ";
-                                        spryng_message += "To " + result.Result[0].Role.ToString() + " ";
-                                    }
+                                if (previous_result.Result[0].Role!=result.Result[0].Role) {                                                            
+                                    alert=true;
+                                    spryng_message += "The cluster status of " + result.DeviceName + " has changed.\n";
+                                    spryng_message += "From " + previous_result.Result[0].Role.ToString() + " ";
+                                    spryng_message += "To " + result.Result[0].Role.ToString() + "\n\n";                                
                                 }
-                                if (previous_result.Result[1].Role!=result.Result[1].Role) {                        
-                                    if (result.Result[1].RoleInt==-1 || result.Result[1].RoleInt<=2) {
-                                        alert=true;
-                                        spryng_message = "The cluster status of " + result.DeviceName + " has changed.\n";
-                                        spryng_message += "From " + previous_result.Result[1].Role.ToString() + " ";
-                                        spryng_message += "To " + result.Result[1].Role.ToString() + " ";
-                                    }
+                                if (previous_result.Result[1].Role!=result.Result[1].Role) {                                                            
+                                    alert=true;
+                                    spryng_message += "The cluster status of " + result.DeviceName + " has changed.\n";
+                                    spryng_message += "From " + previous_result.Result[1].Role.ToString() + " ";
+                                    spryng_message += "To " + result.Result[1].Role.ToString() + "\n\n";                                
                                 }
                                 
-                                if (previous_result.Result[0].MonitoredPortHealthIndex!=result.Result[0].MonitoredPortHealthIndex) {                                                
+                                if (result.Result[0].MonitoredPortHealthIndex<100) {
                                     portsnok=true;
-                                    spryng_message = "The cluster port health of " + result.DeviceName + " (" + result.Result[0].Role.ToString() + ") is too low (" + result.Result[0].MonitoredPortHealthIndex + ").\n";                        
+                                    spryng_message += "The cluster port health of " + result.DeviceName + " (" + result.Result[0].Role.ToString() + ") is too low (" + result.Result[0].MonitoredPortHealthIndex + ").\n\n";                        
                                 }
-                                if (previous_result.Result[1].MonitoredPortHealthIndex!=result.Result[1].MonitoredPortHealthIndex) {                                                
+                                if (result.Result[1].MonitoredPortHealthIndex<100) {
                                     portsnok=true;
-                                    spryng_message = "The cluster port health of " + result.DeviceName + " (" + result.Result[1].Role.ToString() + ") is too low (" + result.Result[1].MonitoredPortHealthIndex + ").\n";
+                                    spryng_message += "The cluster port health of " + result.DeviceName + " (" + result.Result[1].Role.ToString() + ") is too low (" + result.Result[1].MonitoredPortHealthIndex + ").\n\n";
                                 }
                                                     
                                 if (alert || portsnok) {
                                     Console.WriteLine(spryng_message);
                                     var spryngclient = SpryngHttpClient.CreateClientWithPassword(spryng_user, spryng_pass);
-
+                                    
                                     SmsRequest request = new SmsRequest()
-                                    {                            
-                                        Destinations = new string[] { "32477081318" },
+                                    {                                          
+                                        Destinations = new string[] { spryng_phone },
                                         Sender = "RedAlert",
                                         Body = "RED Alert - Cluster Check\n\n" + spryng_message
                                     };
@@ -217,8 +232,11 @@ class Program
                                         Console.WriteLine("Send SMS : An Exception occured!\n{0}", ex.Message);
                                     }
 
-                                    if (sendTeams) {
-                                        //send teams message
+                                    if (sendTeams) {   
+                                        Task.Run(() => 
+                                            {                                     
+                                                Functions.SendTeamsMessage(teams_webhook_url,"Cluster Alert", spryng_message + "\nCluster Alert Sent.");
+                                            });
                                     }                        
                                 }
 
@@ -244,7 +262,7 @@ class Program
         if (sendReport) {
             Console.WriteLine("\nReport:\n------\n" + teams_message);
         }
-
+        
         watch.Stop();
         elapsedMs = watch.ElapsedMilliseconds;
         TimeSpan t = TimeSpan.FromMilliseconds(elapsedMs);
@@ -256,11 +274,12 @@ class Program
                 conn.Close();
             }
         }
-
+        
         if (sendTeams && sendReport) {
+            Console.WriteLine("Sending Teams Message...");
             Task.Run(() => 
             {
-                Functions.SendTeamsMessage(teams_webhook_url,"Check of Clusters",teams_message + "\n" + "Cluster Check Done.\n It took " + t.ToString(@"hh\:mm\:ss\:fff"));
+                Functions.SendTeamsMessage(teams_webhook_url,"Cluster Report",teams_message + "\n" + "Cluster Report Done.\n It took " + t.ToString(@"hh\:mm\:ss\:fff"));
             });            
         }
     }

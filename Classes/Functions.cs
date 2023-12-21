@@ -179,11 +179,17 @@ namespace Infinigate.Watchguard.Classes
         }
 
         public async static void SendTeamsMessage(string webhook_url, string title, string message) {
-            TeamsHookClient tclient = new();
-            MessageCard card = new();
-            card.Title=title;
-            card.Text=message;            
-            tclient.PostAsync(webhook_url, card);
+            try {
+                var tclient = new TeamsHookClient();
+                var card = new MessageCard();
+                card.Title=title;
+                card.Text=message;            
+                await tclient.PostAsync(webhook_url, card);
+                Console.WriteLine("Teams Message Sent.");
+            }
+            catch (Exception ex) {
+                Console.WriteLine("SendTeamsMessage Error:\n" + ex.Message);
+            }
         }
     }
 }
